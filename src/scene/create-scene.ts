@@ -2,9 +2,10 @@ import { vec3 } from "gl-matrix";
 import { Scene } from "./scene";
 import { Transform } from "./transform";
 import { cube } from "./cube";
+import { sphere } from "./sphere";
 import { getProjectionMatrix } from "../get-projection-matrix";
 import Rand from "rand-seed";
-
+export const centerPoint = vec3.fromValues(0, 10, -60);
 const seed = Math.random() + "";
 export function createScene(
   device: GPUDevice,
@@ -13,13 +14,17 @@ export function createScene(
   width: number,
   height: number
 ): Scene {
+  const instance = sphere;
   const transforms: Transform[] = [];
+  //const centerPoint = vec3.fromValues(-16, 3, -60);
+
   const rng = new Rand(seed);
+  const getCentred = () => rng.next() - 0.5;
   for (let i = 0; i < numberOfInstances; i++) {
     const position = vec3.fromValues(
-      rng.next() * 50 - 25,
-      rng.next() * 50 - 25,
-      -30 - rng.next() * 60
+      centerPoint[0] + getCentred() * 30,
+      centerPoint[1] + getCentred() * 5,
+      centerPoint[2] + getCentred() * 30
     );
     const rotation = vec3.fromValues(0, 0, -2);
     const scale = vec3.fromValues(0.6, 0.6, 0.6);
@@ -31,17 +36,21 @@ export function createScene(
   }
 
   const vertexBuffer = device.createBuffer({
-    size: cube.vertex.byteLength,
+    size: instance.vertex.byteLength,
     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
   });
   const indexBuffer = device.createBuffer({
-    size: cube.index.byteLength,
+    size: instance.index.byteLength,
     usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
   });
-  device.queue.writeBuffer(vertexBuffer, 0, cube.vertex);
-  device.queue.writeBuffer(indexBuffer, 0, cube.index);
+  device.queue.writeBuffer(vertexBuffer, 0, instance.vertex);
+  device.queue.writeBuffer(indexBuffer, 0, instance.index);
 
-  const indexedBuffer = { ...cube, vertex: vertexBuffer, index: indexBuffer };
+  const indexedBuffer = {
+    ...instance,
+    vertex: vertexBuffer,
+    index: indexBuffer,
+  };
   const colourList = [
     [0.82, 0.82, 0.48],
     [0.67, 0.45, 0.49],
@@ -101,5 +110,11 @@ export function createScene(
     getProjectionMatrix(width / height)
   );
 
-  return { transforms, indexedBuffer, bindGroups: [bindGroup], mvBuffer };
+  return {
+    transforms,
+    indexedBuffer,
+    bindGroups: [bindGroup],
+    mvBuffer,
+    numberOfInstances,
+  };
 }

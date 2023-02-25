@@ -14,7 +14,7 @@ import { createRegisterAnimationFrame } from "./create-register-animation-frame"
 
   const registerFrame = createRegisterAnimationFrame();
   let unregister: () => void;
-  let numberOfInstances = 500;
+  let numberOfInstances = 100;
   let numberOfLights = 2;
 
   const change = () => {
@@ -47,9 +47,7 @@ import { createRegisterAnimationFrame } from "./create-register-animation-frame"
       canvas,
       format,
       scene,
-      lights,
-      numberOfInstances,
-      numberOfLights
+      lights
     );
     unregister = registerFrame(drawFrame);
   };

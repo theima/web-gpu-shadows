@@ -6,4 +6,5 @@ export interface Scene {
   indexedBuffer: IndexedBuffer;
   bindGroups: GPUBindGroup[];
   mvBuffer: GPUBuffer;
+  numberOfInstances: number;
 }
