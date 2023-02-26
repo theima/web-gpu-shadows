@@ -2,9 +2,13 @@ import { IndexedBuffer } from "../render/indexed-buffer";
 import { Transform } from "./transform";
 
 export interface Scene {
-  transforms: Transform[];
+  spheres: {
+    transforms: Transform[];
+    speeds: number[];
+    numberOfInstances: number;
+  };
+
   indexedBuffer: IndexedBuffer;
   bindGroups: GPUBindGroup[];
   mvBuffer: GPUBuffer;
-  numberOfInstances: number;
 }

@@ -28,7 +28,7 @@ export function createDrawFrame(
     format: "depth24plus",
     usage: GPUTextureUsage.RENDER_ATTACHMENT,
   });
-  const numberOfInstances = scene.numberOfInstances;
+
   const numberOfLights = lights.numberOfLights;
   const start = Date.now() / 1000;
   return () => {
@@ -43,15 +43,16 @@ export function createDrawFrame(
     }
 
     device.queue.writeBuffer(lights.pointBuffer, 0, lights.pointLights);
-
+    const numberOfInstances = scene.spheres.numberOfInstances;
+    const speeds = scene.spheres.speeds;
     const allMv = new Float32Array(numberOfInstances * 4 * 4);
+
     for (let i = 0; i < numberOfInstances; i++) {
-      const instanceTransform = scene.transforms[i];
+      const instanceTransform = scene.spheres.transforms[i];
       const transformationMatrix = getTransformationMatrix(
-        (now * Math.PI * 2) / 10
+        (speeds[i] * (now * Math.PI * 2)) / 1000
       );
-      let position = vec3.fromValues(0, 0, 0);
-      position = vec3.fromValues(
+      let position: vec3 = vec3.fromValues(
         instanceTransform.position[0],
         instanceTransform.position[1],
         instanceTransform.position[2]

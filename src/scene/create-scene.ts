@@ -6,6 +6,7 @@ import { sphere } from "./sphere";
 import { getProjectionMatrix } from "../get-projection-matrix";
 import Rand from "rand-seed";
 export const centerPoint = vec3.fromValues(0, 10, -60);
+
 const seed = Math.random() + "";
 export function createScene(
   device: GPUDevice,
@@ -16,7 +17,7 @@ export function createScene(
 ): Scene {
   const instance = sphere;
   const transforms: Transform[] = [];
-  //const centerPoint = vec3.fromValues(-16, 3, -60);
+  const speeds: number[] = [];
 
   const rng = new Rand(seed);
   const getCentred = () => rng.next() - 0.5;
@@ -26,6 +27,7 @@ export function createScene(
       centerPoint[1] + getCentred() * 5,
       centerPoint[2] + getCentred() * 30
     );
+    const distSquare = Math.abs(position[0]) + Math.abs(position[2]);
     const rotation = vec3.fromValues(0, 0, -2);
     const scale = vec3.fromValues(0.6, 0.6, 0.6);
     transforms.push({
@@ -33,6 +35,7 @@ export function createScene(
       rotation,
       scale,
     });
+    speeds.push(distSquare * (rng.next() + 0.5));
   }
 
   const vertexBuffer = device.createBuffer({
@@ -111,10 +114,13 @@ export function createScene(
   );
 
   return {
-    transforms,
+    spheres: {
+      transforms,
+      numberOfInstances,
+      speeds,
+    },
     indexedBuffer,
     bindGroups: [bindGroup],
     mvBuffer,
-    numberOfInstances,
   };
 }
