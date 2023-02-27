@@ -1,41 +1,37 @@
 import { vec3 } from "gl-matrix";
-import { Scene } from "./scene";
+import { Scene, SphereInstanceData, InstanceData } from "./scene";
 import { Transform } from "./transform";
 import { cube } from "./cube";
 import { sphere } from "./sphere";
 import { getProjectionMatrix } from "../get-projection-matrix";
 import Rand from "rand-seed";
 export const centerPoint = vec3.fromValues(0, 10, -60);
+const planeY = -5;
 
 const seed = Math.random() + "";
-export function createScene(
-  device: GPUDevice,
-  pipeline: GPURenderPipeline,
-  numberOfInstances: number,
-  width: number,
-  height: number
-): Scene {
-  const instance = sphere;
-  const transforms: Transform[] = [];
-  const speeds: number[] = [];
+const rng = new Rand(seed);
+const getCentredOffset = (offset: number) => (rng.next() - 0.5) * offset;
 
-  const rng = new Rand(seed);
-  const getCentred = () => rng.next() - 0.5;
-  for (let i = 0; i < numberOfInstances; i++) {
+function createSpheres(device: GPUDevice, count: number): SphereInstanceData {
+  const instance = sphere;
+  const sphereTransforms: Transform[] = [];
+  const sphereSpeeds: number[] = [];
+
+  for (let i = 0; i < count; i++) {
     const position = vec3.fromValues(
-      centerPoint[0] + getCentred() * 30,
-      centerPoint[1] + getCentred() * 5,
-      centerPoint[2] + getCentred() * 30
+      centerPoint[0] + getCentredOffset(30),
+      centerPoint[1] + getCentredOffset(5),
+      centerPoint[2] + getCentredOffset(30)
     );
     const distSquare = Math.abs(position[0]) + Math.abs(position[2]);
     const rotation = vec3.fromValues(0, 0, -2);
-    const scale = vec3.fromValues(0.6, 0.6, 0.6);
-    transforms.push({
+    const scale = 0.5 + (rng.next() - 0.5) * 0.2;
+    sphereTransforms.push({
       position,
       rotation,
-      scale,
+      scale: vec3.fromValues(scale, scale, scale),
     });
-    speeds.push(distSquare * (rng.next() + 0.5));
+    sphereSpeeds.push(distSquare * (rng.next() + 0.5));
   }
 
   const vertexBuffer = device.createBuffer({
@@ -54,6 +50,76 @@ export function createScene(
     vertex: vertexBuffer,
     index: indexBuffer,
   };
+  return {
+    transforms: sphereTransforms,
+    numberOfInstances: count,
+    speeds: sphereSpeeds,
+    indexedBuffer,
+  };
+}
+function createPlaneTransform(): Transform {
+  const size = 100;
+  const offset = -size / 2;
+  return {
+    position: vec3.fromValues(0, planeY, offset),
+    rotation: vec3.fromValues(0, 0, 0),
+    scale: vec3.fromValues(size, 0.1, size),
+  };
+}
+function createCubes(device: GPUDevice, count: number): InstanceData {
+  const instance = cube;
+  const transforms: Transform[] = [createPlaneTransform()];
+
+  for (let i = 1; i < count; i++) {
+    const position = vec3.fromValues(
+      centerPoint[0] + getCentredOffset(60),
+      planeY,
+      centerPoint[2] + getCentredOffset(60)
+    );
+
+    const rotation = vec3.fromValues(0, 0, 0);
+    const scale = 1.5 + (rng.next() - 0.5) * 0.2;
+    const height = 3 + rng.next() * 3;
+    transforms.push({
+      position,
+      rotation,
+      scale: vec3.fromValues(scale, height, scale),
+    });
+  }
+
+  const vertexBuffer = device.createBuffer({
+    size: instance.vertex.byteLength,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+  });
+  const indexBuffer = device.createBuffer({
+    size: instance.index.byteLength,
+    usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(vertexBuffer, 0, instance.vertex);
+  device.queue.writeBuffer(indexBuffer, 0, instance.index);
+
+  const indexedBuffer = {
+    ...instance,
+    vertex: vertexBuffer,
+    index: indexBuffer,
+  };
+  return {
+    transforms: transforms,
+    numberOfInstances: count,
+    indexedBuffer,
+  };
+}
+
+export function createScene(
+  device: GPUDevice,
+  pipeline: GPURenderPipeline,
+  width: number,
+  height: number
+): Scene {
+  const numberOfSpheres: number = 52;
+  const numberOfCubes = 15;
+  const spheres = createSpheres(device, numberOfSpheres);
+  const cubes = createCubes(device, numberOfCubes);
   const colourList = [
     [0.82, 0.82, 0.48],
     [0.67, 0.45, 0.49],
@@ -61,6 +127,8 @@ export function createScene(
     [0.45, 0.29, 0.51],
     [0.27, 0.39, 0.24],
   ];
+
+  const numberOfInstances = numberOfSpheres + numberOfCubes;
   const colours = new Float32Array(4 * numberOfInstances);
   const colourBuffer = device.createBuffer({
     label: "colourBuffer",
@@ -75,7 +143,7 @@ export function createScene(
 
   const mvBuffer = device.createBuffer({
     label: "mvBuffer",
-    size: 4 * 4 * 4 * numberOfInstances,
+    size: 4 * 4 * 4 * (numberOfSpheres + numberOfCubes),
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
   });
   const projectionBuffer = device.createBuffer({
@@ -114,12 +182,8 @@ export function createScene(
   );
 
   return {
-    spheres: {
-      transforms,
-      numberOfInstances,
-      speeds,
-    },
-    indexedBuffer,
+    spheres,
+    cubes,
     bindGroups: [bindGroup],
     mvBuffer,
   };

@@ -51,6 +51,6 @@ fn fs_main(@location(0) pos: vec3<f32>, @location(1) normal: vec3<f32>, @locatio
             lightResult += pointLightColor * pointIntensity * diffuse * distanceFactor;
         }
     }
-
+    let baseValue: vec3<f32> = vec3(1.1, 1.1, 1.1);
     return vec4<f32>(colour.rgb * lightResult, 1.0);
 }

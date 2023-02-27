@@ -14,14 +14,7 @@ import { createRegisterAnimationFrame } from "./create-register-animation-frame"
 
   const registerFrame = createRegisterAnimationFrame();
   let unregister: () => void;
-  let numberOfInstances = 100;
   let numberOfLights = 2;
-
-  const change = () => {
-    numberOfInstances = getValueFromRangeInput("instances");
-    numberOfLights = getValueFromRangeInput("lights");
-    setup();
-  };
   const setup = async () => {
     unregister?.();
     const format = navigator.gpu?.getPreferredCanvasFormat();
@@ -34,13 +27,7 @@ import { createRegisterAnimationFrame } from "./create-register-animation-frame"
       numberOfLights
     );
 
-    const scene = createScene(
-      device,
-      pipeline,
-      numberOfInstances,
-      canvas.width,
-      canvas.height
-    );
+    const scene = createScene(device, pipeline, canvas.width, canvas.height);
     const drawFrame = createDrawFrame(
       device,
       pipeline,
@@ -53,15 +40,8 @@ import { createRegisterAnimationFrame } from "./create-register-animation-frame"
   };
   if (navigator.gpu) {
     setup();
-    document.getElementById("instances")?.addEventListener("input", change);
-    document.getElementById("lights")?.addEventListener("input", change);
   } else {
     document.getElementsByClassName("content")[0].innerHTML =
       "Browser doesn't support Webgpu";
   }
 })();
-
-function getValueFromRangeInput(id: string): number {
-  const input: HTMLInputElement = document.getElementById(id) as any;
-  return parseInt(input?.value ?? "0");
-}
