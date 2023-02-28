@@ -1,5 +1,6 @@
 import { mat4, vec3 } from "gl-matrix";
 import { getConfiguredContext } from "./get-configured-context";
+import { pipelines } from "./pipelines/pipelines";
 import { renderScene } from "./render/render-scene";
 import { centerPoint } from "./scene/create-scene";
 import { Lights } from "./scene/lights";
@@ -7,7 +8,7 @@ import { Scene } from "./scene/scene";
 
 export function createDrawFrame(
   device: GPUDevice,
-  pipeline: GPURenderPipeline,
+  pipelines: pipelines,
   canvas: HTMLCanvasElement,
   format: GPUTextureFormat,
   scene: Scene,
@@ -88,7 +89,7 @@ export function createDrawFrame(
     renderScene(
       device,
       context.getCurrentTexture().createView(),
-      pipeline,
+      pipelines,
       scene,
       lights,
       depthTexture

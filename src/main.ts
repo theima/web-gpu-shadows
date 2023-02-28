@@ -1,7 +1,10 @@
 import "./style.css";
 import { createLights } from "./scene/create-lights";
 import { createScene } from "./scene/create-scene";
-import { createPipeline } from "./create-pipeline";
+import {
+  createPipeline,
+  createShadowPipeline,
+} from "./pipelines/create-pipeline";
 import { getDevice } from "./get-device";
 import { createDrawFrame } from "./create-draw-frame";
 import { createRegisterAnimationFrame } from "./create-register-animation-frame";
@@ -20,7 +23,7 @@ import { createRegisterAnimationFrame } from "./create-register-animation-frame"
     const format = navigator.gpu?.getPreferredCanvasFormat();
 
     const pipeline = await createPipeline(device, format);
-
+    const shadowPipeline = await createShadowPipeline(device, format);
     const lights = createLights(
       device,
       pipeline.getBindGroupLayout(1),
@@ -30,7 +33,10 @@ import { createRegisterAnimationFrame } from "./create-register-animation-frame"
     const scene = createScene(device, pipeline, canvas.width, canvas.height);
     const drawFrame = createDrawFrame(
       device,
-      pipeline,
+      {
+        mainPass: pipeline,
+        shadowPass: shadowPipeline,
+      },
       canvas,
       format,
       scene,

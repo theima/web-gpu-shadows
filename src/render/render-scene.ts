@@ -1,10 +1,11 @@
+import { pipelines } from "../pipelines/pipelines";
 import { Lights } from "../scene/lights";
 import { Scene } from "../scene/scene";
 
 export function renderScene(
   device: GPUDevice,
   view: GPUTextureView,
-  pipeline: GPURenderPipeline,
+  pipelines: pipelines,
   scene: Scene,
   lights: Lights,
   depthTexture: GPUTexture
@@ -30,7 +31,7 @@ export function renderScene(
   };
   const commandEncoder = device.createCommandEncoder();
   const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-  passEncoder.setPipeline(pipeline);
+  passEncoder.setPipeline(pipelines.mainPass);
   bindGroups.forEach((g, i) => passEncoder.setBindGroup(i, g));
   passEncoder.setVertexBuffer(0, spheres.vertex);
   passEncoder.setIndexBuffer(spheres.index, "uint16");
