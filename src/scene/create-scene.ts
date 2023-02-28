@@ -175,11 +175,16 @@ export function createScene(
       },
     ],
   });
-  device.queue.writeBuffer(
-    projectionBuffer,
-    0,
-    getProjectionMatrix(width / height)
+  const aspect = width / height;
+  const projectionMatrix = getProjectionMatrix(
+    aspect,
+    (60 / 180) * Math.PI,
+    0.1,
+    1000,
+    { x: 0, y: 30, z: -5 },
+    { x: 0, y: 0, z: -40 }
   );
+  device.queue.writeBuffer(projectionBuffer, 0, projectionMatrix);
 
   return {
     spheres,
