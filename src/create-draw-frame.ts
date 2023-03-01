@@ -11,8 +11,7 @@ export function createDrawFrame(
   pipelines: pipelines,
   canvas: HTMLCanvasElement,
   format: GPUTextureFormat,
-  scene: Scene,
-  lights: Lights
+  scene: Scene
 ) {
   const context: GPUCanvasContext = getConfiguredContext(
     canvas,
@@ -29,19 +28,24 @@ export function createDrawFrame(
     usage: GPUTextureUsage.RENDER_ATTACHMENT,
   });
 
-  const numberOfLights = lights.numberOfLights;
+  const numberOfLights = scene.lights.numberOfLights;
   return () => {
     const now = Date.now() / 1000;
 
     for (var i = 0; i < numberOfLights; i++) {
       const offset = 8 * i;
       const posOffset = ((2 * Math.PI) / numberOfLights) * i;
-      lights.pointLights[offset + 0] = 10 * Math.sin(now / 2 + posOffset);
-      lights.pointLights[offset + 1] = 10 * Math.cos(now / 2 + posOffset);
-      lights.pointLights[offset + 2] = -50 + 25 * Math.cos(now / 2 + posOffset);
+      scene.lights.pointLights[offset + 0] = 10 * Math.sin(now / 2 + posOffset);
+      scene.lights.pointLights[offset + 1] = 10 * Math.cos(now / 2 + posOffset);
+      scene.lights.pointLights[offset + 2] =
+        -50 + 25 * Math.cos(now / 2 + posOffset);
     }
 
-    device.queue.writeBuffer(lights.pointBuffer, 0, lights.pointLights);
+    device.queue.writeBuffer(
+      scene.lights.pointBuffer,
+      0,
+      scene.lights.pointLights
+    );
     const numberOfSpheres = scene.spheres.numberOfInstances;
     const numberOfCubes = scene.cubes.numberOfInstances;
     const speeds = scene.spheres.speeds;
@@ -91,7 +95,6 @@ export function createDrawFrame(
       context.getCurrentTexture().createView(),
       pipelines,
       scene,
-      lights,
       depthTexture
     );
   };

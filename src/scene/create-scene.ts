@@ -5,6 +5,7 @@ import { cube } from "./cube";
 import { sphere } from "./sphere";
 import { getProjectionMatrix } from "../get-projection-matrix";
 import Rand from "rand-seed";
+import { createLights } from "./create-lights";
 export const centerPoint = vec3.fromValues(0, 10, -60);
 const planeY = -5;
 
@@ -118,8 +119,14 @@ export function createScene(
 ): Scene {
   const numberOfSpheres: number = 52;
   const numberOfCubes = 15;
+  let numberOfLights = 2;
   const spheres = createSpheres(device, numberOfSpheres);
   const cubes = createCubes(device, numberOfCubes);
+  const lights = createLights(
+    device,
+    pipeline.getBindGroupLayout(1),
+    numberOfLights
+  );
   const colourList = [
     [0.82, 0.82, 0.48],
     [0.67, 0.45, 0.49],
@@ -189,7 +196,8 @@ export function createScene(
   return {
     spheres,
     cubes,
-    bindGroups: [bindGroup],
+    bindGroups: [bindGroup, lights.bindGroup],
     mvBuffer,
+    lights,
   };
 }

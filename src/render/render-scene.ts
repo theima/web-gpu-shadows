@@ -1,5 +1,4 @@
 import { pipelines } from "../pipelines/pipelines";
-import { Lights } from "../scene/lights";
 import { Scene } from "../scene/scene";
 
 export function renderScene(
@@ -7,12 +6,10 @@ export function renderScene(
   view: GPUTextureView,
   pipelines: pipelines,
   scene: Scene,
-  lights: Lights,
   depthTexture: GPUTexture
 ) {
   const spheres = scene.spheres.indexedBuffer;
   const cubes = scene.cubes.indexedBuffer;
-  const bindGroups = [...scene.bindGroups, lights.bindGroup];
   const renderPassDescriptor: GPURenderPassDescriptor = {
     colorAttachments: [
       {
@@ -30,9 +27,21 @@ export function renderScene(
     },
   };
   const commandEncoder = device.createCommandEncoder();
-  const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-  passEncoder.setPipeline(pipelines.mainPass);
-  bindGroups.forEach((g, i) => passEncoder.setBindGroup(i, g));
+  createPass(commandEncoder, renderPassDescriptor, scene, pipelines.mainPass);
+  device.queue.submit([commandEncoder.finish()]);
+}
+
+function createPass(
+  commandEncoder: GPUCommandEncoder,
+  descriptor: GPURenderPassDescriptor,
+  scene: Scene,
+  pipeline: GPURenderPipeline
+): void {
+  const spheres = scene.spheres.indexedBuffer;
+  const cubes = scene.cubes.indexedBuffer;
+  const passEncoder = commandEncoder.beginRenderPass(descriptor);
+  passEncoder.setPipeline(pipeline);
+  scene.bindGroups.forEach((g, i) => passEncoder.setBindGroup(i, g));
   passEncoder.setVertexBuffer(0, spheres.vertex);
   passEncoder.setIndexBuffer(spheres.index, "uint16");
   passEncoder.drawIndexed(spheres.indexCount, scene.spheres.numberOfInstances);
@@ -46,6 +55,4 @@ export function renderScene(
     scene.spheres.numberOfInstances
   );
   passEncoder.end();
-
-  device.queue.submit([commandEncoder.finish()]);
 }

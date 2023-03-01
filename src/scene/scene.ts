@@ -1,4 +1,5 @@
 import { IndexedBuffer } from "../render/indexed-buffer";
+import { Lights } from "./lights";
 import { Transform } from "./transform";
 
 export interface InstanceData {
@@ -14,4 +15,5 @@ export interface Scene {
   cubes: InstanceData;
   bindGroups: GPUBindGroup[];
   mvBuffer: GPUBuffer;
+  lights: Lights;
 }

@@ -1,13 +1,12 @@
-import "./style.css";
-import { createLights } from "./scene/create-lights";
-import { createScene } from "./scene/create-scene";
-import {
-  createPipeline,
-  createShadowPipeline,
-} from "./pipelines/create-pipeline";
-import { getDevice } from "./get-device";
 import { createDrawFrame } from "./create-draw-frame";
 import { createRegisterAnimationFrame } from "./create-register-animation-frame";
+import { getDevice } from "./get-device";
+import {
+  createPipeline,
+  createShadowPipeline
+} from "./pipelines/create-pipeline";
+import { createScene } from "./scene/create-scene";
+import "./style.css";
 
 (async () => {
   const canvas: HTMLCanvasElement = document.querySelector("canvas")!;
@@ -17,18 +16,14 @@ import { createRegisterAnimationFrame } from "./create-register-animation-frame"
 
   const registerFrame = createRegisterAnimationFrame();
   let unregister: () => void;
-  let numberOfLights = 2;
+
   const setup = async () => {
     unregister?.();
     const format = navigator.gpu?.getPreferredCanvasFormat();
 
     const pipeline = await createPipeline(device, format);
     const shadowPipeline = await createShadowPipeline(device, format);
-    const lights = createLights(
-      device,
-      pipeline.getBindGroupLayout(1),
-      numberOfLights
-    );
+
 
     const scene = createScene(device, pipeline, canvas.width, canvas.height);
     const drawFrame = createDrawFrame(
@@ -40,7 +35,6 @@ import { createRegisterAnimationFrame } from "./create-register-animation-frame"
       canvas,
       format,
       scene,
-      lights
     );
     unregister = registerFrame(drawFrame);
   };
