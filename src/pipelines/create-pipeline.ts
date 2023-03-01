@@ -30,7 +30,7 @@ const primitive: GPUPrimitiveState = {
 const depthStencil: GPUDepthStencilState = {
   depthWriteEnabled: true,
   depthCompare: "less",
-  format: "depth24plus",
+  format: "depth32float",
 };
 export async function createShadowPipeline(
   device: GPUDevice,

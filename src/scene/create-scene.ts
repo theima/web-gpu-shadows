@@ -5,7 +5,6 @@ import { cube } from "./cube";
 import { sphere } from "./sphere";
 import { getProjectionMatrix } from "../get-projection-matrix";
 import Rand from "rand-seed";
-import { createLights } from "./create-lights";
 export const centerPoint = vec3.fromValues(0, 10, -60);
 const planeY = -5;
 
@@ -114,19 +113,14 @@ function createCubes(device: GPUDevice, count: number): InstanceData {
 export function createScene(
   device: GPUDevice,
   pipeline: GPURenderPipeline,
+  shadowPipeline: GPURenderPipeline,
   width: number,
   height: number
 ): Scene {
   const numberOfSpheres: number = 52;
   const numberOfCubes = 15;
-  let numberOfLights = 2;
   const spheres = createSpheres(device, numberOfSpheres);
   const cubes = createCubes(device, numberOfCubes);
-  const lights = createLights(
-    device,
-    pipeline.getBindGroupLayout(1),
-    numberOfLights
-  );
   const colourList = [
     [0.82, 0.82, 0.48],
     [0.67, 0.45, 0.49],
@@ -158,8 +152,14 @@ export function createScene(
     size: 4 * 4 * 4,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
+  const lightProjectionBuffer = device.createBuffer({
+    label: "GPUBuffer for light projection",
+    size: 4 * 4 * 4, // 4 x 4 x float32
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
 
-  const bindGroup = device.createBindGroup({
+  const vertexBindGroup = device.createBindGroup({
+    label: "vertex bindgroup",
     layout: pipeline.getBindGroupLayout(0),
     entries: [
       {
@@ -177,7 +177,70 @@ export function createScene(
       {
         binding: 2,
         resource: {
+          buffer: lightProjectionBuffer,
+        },
+      },
+      {
+        binding: 3,
+        resource: {
           buffer: colourBuffer,
+        },
+      },
+    ],
+  });
+  const shadowDepthTexture = device.createTexture({
+    size: [2048, 2048],
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    format: "depth32float",
+  });
+  const renderDepthTexture = device.createTexture({
+    size: { width, height },
+    format: "depth32float",
+    usage: GPUTextureUsage.RENDER_ATTACHMENT,
+  });
+  const shadowDepthView = shadowDepthTexture.createView();
+  const renderDepthView = renderDepthTexture.createView();
+  const lightBuffer = device.createBuffer({
+    label: "GPUBuffer store 4x4 matrix",
+    size: 4 * 4, // 4 x float32: position vec4
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  const fragmentBindGroup = device.createBindGroup({
+    label: "Group for fragment",
+    layout: pipeline.getBindGroupLayout(1),
+    entries: [
+      {
+        binding: 0,
+        resource: {
+          buffer: lightBuffer,
+        },
+      },
+      {
+        binding: 1,
+        resource: shadowDepthView,
+      },
+      {
+        binding: 2,
+        resource: device.createSampler({
+          compare: "less",
+        }),
+      },
+    ],
+  });
+  const shadowBindGroup = device.createBindGroup({
+    label: "Group for shadowPass",
+    layout: shadowPipeline.getBindGroupLayout(0),
+    entries: [
+      {
+        binding: 0,
+        resource: {
+          buffer: mvBuffer,
+        },
+      },
+      {
+        binding: 1,
+        resource: {
+          buffer: lightProjectionBuffer,
         },
       },
     ],
@@ -196,8 +259,12 @@ export function createScene(
   return {
     spheres,
     cubes,
-    bindGroups: [bindGroup, lights.bindGroup],
+    bindGroups: [vertexBindGroup, fragmentBindGroup],
+    shadowBindGroup,
     mvBuffer,
-    lights,
+    shadowDepthView,
+    renderDepthView,
+    lightBuffer,
+    lightProjectionBuffer,
   };
 }

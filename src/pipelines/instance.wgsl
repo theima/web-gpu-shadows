@@ -1,57 +1,74 @@
 @group(0) @binding(0) var<storage> modelViews : array<mat4x4<f32>>;
-@group(0) @binding(1) var<uniform> projection : mat4x4<f32>;
-@group(0) @binding(2) var<storage> colours : array<vec4<f32>>;
-@group(0) @binding(3) var<uniform> lightProjection : mat4x4<f32>;
+@group(0) @binding(1) var<uniform> cameraProjection : mat4x4<f32>;
+@group(0) @binding(2) var<uniform> lightProjection : mat4x4<f32>;
+@group(0) @binding(3) var<storage> colors : array<vec4<f32>>;
 
 struct VertexOutput {
     @builtin(position) Position: vec4<f32>,
     @location(0) fragPosition: vec3<f32>,
     @location(1) fragNormal: vec3<f32>,
     @location(2) fragUV: vec2<f32>,
-    @location(3) fragColour: vec4<f32>
+    @location(3) shadowPos: vec3<f32>,
+    @location(4) fragColor: vec4<f32>
 };
 
 @vertex
-fn main(@builtin(instance_index) index: u32, @location(0) position: vec3<f32>, @location(1) normal: vec3<f32>, @location(2) uv: vec2<f32>) -> VertexOutput {
+fn main(
+    @builtin(instance_index) index: u32,
+    @location(0) position: vec3<f32>,
+    @location(1) normal: vec3<f32>,
+    @location(2) uv: vec2<f32>
+) -> VertexOutput {
     let modelview = modelViews[index];
-    let mvp = projection * modelview;
     let pos = vec4<f32>(position, 1.0);
+    let posFromCamera: vec4<f32> = cameraProjection * modelview * pos;
 
     var output: VertexOutput;
-    output.Position = mvp * pos;
+    output.Position = posFromCamera;
     output.fragPosition = (modelview * pos).xyz;
     output.fragNormal = (modelview * vec4<f32>(normal, 0.0)).xyz;
     output.fragUV = uv;
-    output.fragColour = colours[index];
+    output.fragColor = colors[index];
+
+    let posFromLight: vec4<f32> = lightProjection * modelview * pos;
+    // Convert shadowPos XY to (0, 1) to fit texture UV
+    output.shadowPos = vec3<f32>(posFromLight.xy * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5), posFromLight.z);
     return output;
 }
 
-@group(1) @binding(0) var<uniform> ambientIntensity : f32;
-@group(1) @binding(1) var<storage> pointLights : array<vec4<f32>>;
-@group(1) @binding(2) var<uniform> numberOfPointLights: i32;
+@group(1) @binding(0) var<uniform> lightPosition : vec4<f32>;
+@group(1) @binding(1) var shadowMap: texture_depth_2d;
+@group(1) @binding(2) var shadowSampler: sampler_comparison;
+
 @fragment
-fn fs_main(@location(0) pos: vec3<f32>, @location(1) normal: vec3<f32>, @location(2) uv: vec2<f32>, @location(3) colour: vec4<f32>) -> @location(0) vec4<f32> {
-    let ambintLightColor: vec3<f32> = vec3(1.0, 1.0, 1.0);
-    let pointLightColor: vec3<f32> = vec3(1.0, 1.0, 1.0);
-    let dirLightColor: vec3<f32> = vec3(1.0, 1.0, 1.0);
-
-    var lightResult: vec3<f32> = vec3(0.0, 0.0, 0.0);
-
-    lightResult += ambintLightColor * ambientIntensity;
-
-    for (var i: i32 = 0; i < numberOfPointLights; i = i + 1) {
-        var offset = 2 * i;
-        var pointPosition = pointLights[offset].xyz;
-        var pointIntensity: f32 = pointLights[offset + 1][0];
-        var pointRadius: f32 = pointLights[offset + 1][1];
-        var L = pointPosition - pos;
-        var distance = length(L);
-        if distance < pointRadius {
-            var diffuse: f32 = max(dot(normalize(L), normal), 0.0);
-            var distanceFactor: f32 = pow(1.0 - distance / pointRadius, 2.0);
-            lightResult += pointLightColor * pointIntensity * diffuse * distanceFactor;
+fn fs_main(
+    @location(0) fragPosition: vec3<f32>,
+    @location(1) fragNormal: vec3<f32>,
+    @location(2) fragUV: vec2<f32>,
+    @location(3) shadowPos: vec3<f32>,
+    @location(4) fragColor: vec4<f32>
+) -> @location(0) vec4<f32> {
+    let objectColor = fragColor.rgb;
+    // Directional Light
+    let diffuse: f32 = max(dot(normalize(lightPosition.xyz), fragNormal), 0.0);
+    // add shadow factor
+    var shadow: f32 = 0.0;
+    // apply Percentage-closer filtering (PCF)
+    // sample nearest 9 texels to smooth result
+    let size = f32(textureDimensions(shadowMap).x);
+    for (var y: i32 = -1 ; y <= 1 ; y = y + 1) {
+        for (var x: i32 = -1 ; x <= 1 ; x = x + 1) {
+            let offset = vec2<f32>(f32(x) / size, f32(y) / size);
+            shadow = shadow + textureSampleCompare(
+                shadowMap,
+                shadowSampler,
+                shadowPos.xy + offset,
+                shadowPos.z - 0.005  // apply a small bias to avoid acne
+            );
         }
     }
-    let baseValue: vec3<f32> = vec3(1.1, 1.1, 1.1);
-    return vec4<f32>(colour.rgb * lightResult, 1.0);
+    shadow = shadow / 9.0;
+    // ambient + diffuse * shadow
+    let lightFactor = min(0.3 + shadow * diffuse, 1.0);
+    return vec4<f32>(objectColor * lightFactor, 1.0);
 }

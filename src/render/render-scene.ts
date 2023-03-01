@@ -6,10 +6,25 @@ export function renderScene(
   view: GPUTextureView,
   pipelines: pipelines,
   scene: Scene,
-  depthTexture: GPUTexture
 ) {
-  const spheres = scene.spheres.indexedBuffer;
-  const cubes = scene.cubes.indexedBuffer;
+  const commandEncoder = device.createCommandEncoder();
+  const shadowPassDescriptor: GPURenderPassDescriptor = {
+    colorAttachments: [],
+    depthStencilAttachment: {
+      view: scene.shadowDepthView,
+      depthClearValue: 1.0,
+      depthLoadOp: "clear",
+      depthStoreOp: "store",
+    },
+  };
+  createPass(
+    commandEncoder,
+    shadowPassDescriptor,
+    [scene.shadowBindGroup],
+    scene,
+    pipelines.shadowPass
+  );
+
   const renderPassDescriptor: GPURenderPassDescriptor = {
     colorAttachments: [
       {
@@ -20,20 +35,28 @@ export function renderScene(
       },
     ],
     depthStencilAttachment: {
-      view: depthTexture.createView(),
+      view: scene.renderDepthView,
       depthClearValue: 1.0,
       depthLoadOp: "clear",
       depthStoreOp: "store",
     },
   };
-  const commandEncoder = device.createCommandEncoder();
-  createPass(commandEncoder, renderPassDescriptor, scene, pipelines.mainPass);
+
+  createPass(
+    commandEncoder,
+    renderPassDescriptor,
+    scene.bindGroups,
+    scene,
+    pipelines.mainPass
+  );
+
   device.queue.submit([commandEncoder.finish()]);
 }
 
 function createPass(
   commandEncoder: GPUCommandEncoder,
   descriptor: GPURenderPassDescriptor,
+  bindGroups: GPUBindGroup[],
   scene: Scene,
   pipeline: GPURenderPipeline
 ): void {
@@ -41,7 +64,7 @@ function createPass(
   const cubes = scene.cubes.indexedBuffer;
   const passEncoder = commandEncoder.beginRenderPass(descriptor);
   passEncoder.setPipeline(pipeline);
-  scene.bindGroups.forEach((g, i) => passEncoder.setBindGroup(i, g));
+  bindGroups.forEach((g, i) => passEncoder.setBindGroup(i, g));
   passEncoder.setVertexBuffer(0, spheres.vertex);
   passEncoder.setIndexBuffer(spheres.index, "uint16");
   passEncoder.drawIndexed(spheres.indexCount, scene.spheres.numberOfInstances);

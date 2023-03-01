@@ -18,34 +18,36 @@ export function createDrawFrame(
     device,
     format
   );
-
-  const depthTexture = device.createTexture({
-    size: {
-      width: canvas.width,
-      height: canvas.height,
-    },
-    format: "depth24plus",
-    usage: GPUTextureUsage.RENDER_ATTACHMENT,
-  });
-
-  const numberOfLights = scene.lights.numberOfLights;
+  const lightViewMatrix = mat4.create();
+  const lightProjectionMatrix = mat4.create();
+  const lightPosition = vec3.fromValues(25, 70, 40);
+  const up = vec3.fromValues(0, 1, 0);
+  const origin = vec3.fromValues(0, 0, -40);
   return () => {
     const now = Date.now() / 1000;
 
-    for (var i = 0; i < numberOfLights; i++) {
-      const offset = 8 * i;
-      const posOffset = ((2 * Math.PI) / numberOfLights) * i;
-      scene.lights.pointLights[offset + 0] = 10 * Math.sin(now / 2 + posOffset);
-      scene.lights.pointLights[offset + 1] = 10 * Math.cos(now / 2 + posOffset);
-      scene.lights.pointLights[offset + 2] =
-        -50 + 25 * Math.cos(now / 2 + posOffset);
-    }
-
-    device.queue.writeBuffer(
-      scene.lights.pointBuffer,
-      0,
-      scene.lights.pointLights
+    //const now = performance.now()
+    //lightPosition[0] = Math.sin(now) * 5;
+    //lightPosition[2] = Math.cos(now) * 5;
+    // update lvp matrix
+    mat4.lookAt(lightViewMatrix, lightPosition, origin, up);
+    mat4.ortho(lightProjectionMatrix, -40, 40, -40, 40, -50, 200);
+    mat4.multiply(
+      lightProjectionMatrix,
+      lightProjectionMatrix,
+      lightViewMatrix
     );
+    device.queue.writeBuffer(
+      scene.lightProjectionBuffer,
+      0,
+      lightProjectionMatrix as Float32Array
+    );
+    device.queue.writeBuffer(
+      scene.lightBuffer,
+      0,
+      lightPosition as Float32Array
+    );
+
     const numberOfSpheres = scene.spheres.numberOfInstances;
     const numberOfCubes = scene.cubes.numberOfInstances;
     const speeds = scene.spheres.speeds;
@@ -94,8 +96,7 @@ export function createDrawFrame(
       device,
       context.getCurrentTexture().createView(),
       pipelines,
-      scene,
-      depthTexture
+      scene
     );
   };
 }

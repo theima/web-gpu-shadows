@@ -3,7 +3,7 @@ import { createRegisterAnimationFrame } from "./create-register-animation-frame"
 import { getDevice } from "./get-device";
 import {
   createPipeline,
-  createShadowPipeline
+  createShadowPipeline,
 } from "./pipelines/create-pipeline";
 import { createScene } from "./scene/create-scene";
 import "./style.css";
@@ -24,8 +24,13 @@ import "./style.css";
     const pipeline = await createPipeline(device, format);
     const shadowPipeline = await createShadowPipeline(device, format);
 
-
-    const scene = createScene(device, pipeline, canvas.width, canvas.height);
+    const scene = createScene(
+      device,
+      pipeline,
+      shadowPipeline,
+      canvas.width,
+      canvas.height
+    );
     const drawFrame = createDrawFrame(
       device,
       {
@@ -34,7 +39,7 @@ import "./style.css";
       },
       canvas,
       format,
-      scene,
+      scene
     );
     unregister = registerFrame(drawFrame);
   };
