@@ -13,10 +13,8 @@ export interface Scene {
   spheres: SphereInstanceData;
   cubes: InstanceData;
   bindGroups: GPUBindGroup[];
-  mvBuffer: GPUBuffer;
   shadowBindGroup: GPUBindGroup;
   shadowDepthView: GPUTextureView;
   renderDepthView: GPUTextureView;
-  lightBuffer: GPUBuffer;
-  lightProjectionBuffer: GPUBuffer;
+  update: (now: number) => void;
 }

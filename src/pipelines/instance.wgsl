@@ -49,12 +49,11 @@ fn fs_main(
     @location(4) fragColor: vec4<f32>
 ) -> @location(0) vec4<f32> {
     let objectColor = fragColor.rgb;
-    // Directional Light
+
     let diffuse: f32 = max(dot(normalize(lightPosition.xyz), fragNormal), 0.0);
-    // add shadow factor
+
     var shadow: f32 = 0.0;
-    // apply Percentage-closer filtering (PCF)
-    // sample nearest 9 texels to smooth result
+
     let size = f32(textureDimensions(shadowMap).x);
     for (var y: i32 = -1 ; y <= 1 ; y = y + 1) {
         for (var x: i32 = -1 ; x <= 1 ; x = x + 1) {
@@ -63,12 +62,12 @@ fn fs_main(
                 shadowMap,
                 shadowSampler,
                 shadowPos.xy + offset,
-                shadowPos.z - 0.005  // apply a small bias to avoid acne
+                shadowPos.z - 0.005
             );
         }
     }
     shadow = shadow / 9.0;
-    // ambient + diffuse * shadow
-    let lightFactor = min(0.3 + shadow * diffuse, 1.0);
+
+    let lightFactor = min(0.4 + shadow * diffuse, 1.0);
     return vec4<f32>(objectColor * lightFactor, 1.0);
 }
