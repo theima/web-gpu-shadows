@@ -3,7 +3,7 @@ import { Scene, SphereInstanceData, InstanceData } from "./scene";
 import { Transform } from "./transform";
 import { cube } from "./cube";
 import { sphere } from "./sphere";
-import { getProjectionMatrix } from "../get-projection-matrix";
+import { getProjectionMatrix } from "./get-projection-matrix";
 import Rand from "rand-seed";
 export const centerPoint = vec3.fromValues(0, 10, -60);
 const planeY = -5;
@@ -251,8 +251,8 @@ export function createScene(
     (60 / 180) * Math.PI,
     0.1,
     1000,
-    { x: 0, y: 30, z: -5 },
-    { x: 0, y: 0, z: -40 }
+    vec3.fromValues(0, 30, -5),
+    vec3.fromValues(0, 0, -40)
   );
   device.queue.writeBuffer(projectionBuffer, 0, projectionMatrix);
   const updateLights = createUpdateLights(
@@ -283,13 +283,14 @@ function createUpdateLights(
 ) {
   const lightViewMatrix = mat4.create();
   const lightProjectionMatrix = mat4.create();
-  const lightPosition = vec3.fromValues(25, 70, 40);
+  const xPos = 0;
+  const lightPosition = vec3.fromValues(xPos, 70, 40);
   const up = vec3.fromValues(0, 1, 0);
-  const origin = vec3.fromValues(0, 0, -40);
+  const origin = vec3.fromValues(0, 0, -100);
   return (now: number) => {
-    const step = now / 1000;
-    //lightPosition[0] = Math.sin(step) * 5;
-    //lightPosition[2] = Math.cos(step) * 5;
+    const step = now / 2000;
+    lightPosition[0] = xPos + Math.sin(step) * 30;
+    lightPosition[2] = 40 + Math.cos(step) * 25;
     // update lvp matrix
     mat4.lookAt(lightViewMatrix, lightPosition, origin, up);
     mat4.ortho(lightProjectionMatrix, -40, 40, -40, 40, -50, 200);

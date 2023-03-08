@@ -6,18 +6,12 @@ export function getProjectionMatrix(
   fov: number = (60 / 180) * Math.PI,
   near: number = 0.1,
   far: number = 100.0,
-  position = { x: 0, y: 0, z: 0 },
-  lookAt = { x: 0, y: 0, z: 0 }
+  eye: vec3 = vec3.fromValues(0, 0, 0),
+  lookAt: vec3 = vec3.fromValues(0, 0, 0)
 ): Float32Array {
   const cameraView = mat4.create();
-  const eye = vec3.fromValues(position.x, position.y, position.z);
   mat4.translate(cameraView, cameraView, eye);
-  mat4.lookAt(
-    cameraView,
-    eye,
-    vec3.fromValues(lookAt.x, lookAt.y, lookAt.z),
-    up
-  );
+  mat4.lookAt(cameraView, eye, lookAt, up);
 
   const projectionMatrix = mat4.create();
   mat4.perspective(projectionMatrix, fov, aspect, near, far);
