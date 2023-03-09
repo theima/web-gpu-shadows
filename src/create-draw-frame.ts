@@ -1,8 +1,6 @@
-import { mat4, vec3 } from "gl-matrix";
 import { getConfiguredContext } from "./get-configured-context";
 import { pipelines } from "./pipelines/pipelines";
 import { renderScene } from "./render/render-scene";
-import { centerPoint } from "./scene/create-scene";
 import { Scene } from "./scene/scene";
 
 export function createDrawFrame(

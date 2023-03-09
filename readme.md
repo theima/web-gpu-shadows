@@ -1,3 +1,3 @@
-# WebGPU cubes
+# WebGPU shadows
 
-More test of webgpu, based on [WebGPU Tutorial](https://www.youtube.com/playlist?list=PLVHfUzm5DIVCZxjmaZsBXEXoohzSqeCnV)
+Testing shadow rendering. A little closer to finding a structure for the rendering. Would like to have the scene and the renderer more separated.

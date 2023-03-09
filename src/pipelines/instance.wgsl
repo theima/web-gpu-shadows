@@ -68,6 +68,6 @@ fn fs_main(
     }
     shadow = shadow / 9.0;
 
-    let lightFactor = min(0.4 + shadow * diffuse, 1.0);
+    let lightFactor = min(0.5 + shadow * diffuse, 1.0);
     return vec4<f32>(objectColor * lightFactor, 1.0);
 }

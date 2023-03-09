@@ -5,10 +5,10 @@ import { cube } from "./cube";
 import { sphere } from "./sphere";
 import { getProjectionMatrix } from "./get-projection-matrix";
 import Rand from "rand-seed";
-export const centerPoint = vec3.fromValues(0, 10, -60);
+export const centerPoint = vec3.fromValues(0, 10, -40);
 const planeY = -5;
 
-const seed = Math.random() + "";
+const seed = "aa";
 const rng = new Rand(seed);
 const getCentredOffset = (offset: number) => (rng.next() - 0.5) * offset;
 
@@ -58,7 +58,7 @@ function createSpheres(device: GPUDevice, count: number): SphereInstanceData {
   };
 }
 function createPlaneTransform(): Transform {
-  const size = 100;
+  const size = 200;
   const offset = -size / 2;
   return {
     position: vec3.fromValues(0, planeY, offset),
@@ -251,8 +251,8 @@ export function createScene(
     (60 / 180) * Math.PI,
     0.1,
     1000,
-    vec3.fromValues(0, 30, -5),
-    vec3.fromValues(0, 0, -40)
+    vec3.fromValues(0, 40, -5),
+    vec3.fromValues(0, 0, -30)
   );
   device.queue.writeBuffer(projectionBuffer, 0, projectionMatrix);
   const updateLights = createUpdateLights(
@@ -284,14 +284,15 @@ function createUpdateLights(
   const lightViewMatrix = mat4.create();
   const lightProjectionMatrix = mat4.create();
   const xPos = 0;
-  const lightPosition = vec3.fromValues(xPos, 70, 40);
+  const zPos = 30;
+  const lightPosition = vec3.fromValues(xPos, 80, zPos);
   const up = vec3.fromValues(0, 1, 0);
-  const origin = vec3.fromValues(0, 0, -100);
+  const origin = vec3.fromValues(0, 0, -50);
   return (now: number) => {
     const step = now / 2000;
     lightPosition[0] = xPos + Math.sin(step) * 30;
-    lightPosition[2] = 40 + Math.cos(step) * 25;
-    // update lvp matrix
+    lightPosition[2] = zPos + Math.cos(step) * 25;
+
     mat4.lookAt(lightViewMatrix, lightPosition, origin, up);
     mat4.ortho(lightProjectionMatrix, -40, 40, -40, 40, -50, 200);
     mat4.multiply(
